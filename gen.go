@@ -40,28 +40,15 @@ func runEgenCmd(cmd *cobra.Command, args []string) error {
 
 	u, err := url.Parse(genCmdArgs.Template)
 	if err != nil {
-		parts := strings.Split(genCmdArgs.Template, "/")
+		return err
+	}
 
-		if len(parts) == 1 {
-			return fmt.Errorf("template must be in the form of [<remote>/]<owner>/<repo> or a valid URL")
-		}
+	if u.Host == "" {
+		u.Host = "github.com"
+	}
 
-		remote := "github.com"
-
-		if len(parts) == 3 {
-			remote = parts[0]
-			parts = parts[1:]
-		}
-
-		if len(parts) > 3 {
-			return fmt.Errorf("template must be in the form of [<remote>/]<owner>/<repo> or a valid URL")
-		}
-
-		u = &url.URL{
-			Scheme: "https",
-			Host:   remote,
-			Path:   strings.Join(parts, "/"),
-		}
+	if u.Scheme == "" {
+		u.Scheme = "https"
 	}
 
 	src, err := cloneTemplate(u)
@@ -95,7 +82,7 @@ func runEgenCmd(cmd *cobra.Command, args []string) error {
 		}
 
 		var buf bytes.Buffer
-		err = nameTpl.Execute(&buf, templateContext)
+		err = nameTpl.Execute(&buf, templateContext())
 		if err != nil {
 			return err
 		}
@@ -119,7 +106,7 @@ func runEgenCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		err = fileTpl.Execute(f, templateContext)
+		err = fileTpl.Execute(f, templateContext())
 		if err != nil {
 			return err
 		}
@@ -135,13 +122,15 @@ func runEgenCmd(cmd *cobra.Command, args []string) error {
 
 func cloneTemplate(u *url.URL) (string, error) {
 
-	trgt := filepath.Join("~/.cache/tpl", u.Host, u.Path)
+	hm, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
 
-	fmt.Println(trgt)
+	trgt := filepath.Join(hm, ".cache/tpl", u.Host, u.Path)
 
 	// check if already cloned
 	fi, err := os.Stat(trgt)
-	fmt.Println(fi.IsDir(), fi.Name())
 	if err == nil && fi.IsDir() {
 		r, err := git.PlainOpen(trgt)
 		if err != nil {
@@ -152,12 +141,12 @@ func cloneTemplate(u *url.URL) (string, error) {
 			return "", err
 		}
 		if err := w.Pull(&git.PullOptions{RemoteName: "origin"}); err != nil {
-			return "", err
+			if err != git.NoErrAlreadyUpToDate {
+				return "", err
+			}
 		}
 		return trgt, nil
 	}
-
-	fmt.Println("making dir")
 
 	if err := os.MkdirAll(trgt, os.ModePerm); err != nil {
 		return "", err
@@ -187,5 +176,6 @@ func envMap() map[string]string {
 		parts := strings.SplitN(e, "=", 2)
 		m[parts[0]] = parts[1]
 	}
+	fmt.Println(m)
 	return m
 }

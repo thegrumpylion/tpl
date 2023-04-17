@@ -14,15 +14,7 @@ import (
 	"github.com/ulikunitz/xz"
 )
 
-func isArchive(src string) bool {
-	a := []string{".tar", ".tar.gz", ".tar.bz2", ".tar.xz", ".tgz", ".zip"}
-	for _, sfx := range a {
-		if strings.HasSuffix(src, sfx) {
-			return true
-		}
-	}
-	return false
-}
+var archiveSuffixes = []string{".tar", ".tar.gz", ".tar.bz2", ".tar.xz", ".tgz", ".zip"}
 
 func unpack(src string, dst string) error {
 
@@ -58,7 +50,6 @@ func unpack(src string, dst string) error {
 		if err != nil {
 			return err
 		}
-		defer xzReader.Close()
 		tf = xzReader
 	}
 

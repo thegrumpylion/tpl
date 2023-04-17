@@ -120,9 +120,7 @@ func getTemplateFolder(src string) (string, error) {
 	}
 }
 
-func checkPathExistence(src string) (string, error) {
-
-	archiveSuffixes := []string{".tar", ".tar.gz", ".tar.bz2", ".tar.xz", ".tgz", ".zip"}
+func checkPathExistence(src string) (string, bool) {
 
 	// check if the input string refers to a dir.
 	fileInfo, err := os.Stat(src)

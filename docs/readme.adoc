@@ -1,3 +1,9 @@
 = tpl
 
 generate files and folder from a template and config file
+
+== sources
+
+* folder
+* archive
+* git

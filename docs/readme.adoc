@@ -1,0 +1,3 @@
+= tpl
+
+generate files and folder from a template and config file

@@ -66,46 +66,58 @@ func runEgenCmd(cmd *cobra.Command, args []string) error {
 
 	err = filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
 
+		// ignore "." dir
 		if path == src {
 			return nil
 		}
 
+		// strip src path
 		trgtName := path[len(src)+1:]
 
+		// TODO:make this configurable
+		// ignore .git dir
 		if strings.HasPrefix(trgtName, ".git") {
 			return nil
 		}
 
+		// create file name template
 		nameTpl, err := template.New("").Delims(genCmdArgs.LeftDelim, genCmdArgs.RightDelim).Funcs(sprigFuncMap).Parse(trgtName)
 		if err != nil {
 			return err
 		}
 
+		// render file name
 		var buf bytes.Buffer
 		err = nameTpl.Execute(&buf, templateContext())
 		if err != nil {
 			return err
 		}
 
+		// create dir and return
 		if d.IsDir() {
 			return os.MkdirAll(filepath.Join(trgtDir, buf.String()), os.ModePerm)
 		}
 
+		// read file template content
 		fileTplContent, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
 		}
 
+		// parse file template
 		fileTpl, err := template.New("").Delims(genCmdArgs.LeftDelim, genCmdArgs.RightDelim).Funcs(sprigFuncMap).Parse(string(fileTplContent))
 		if err != nil {
 			return err
 		}
 
+		// TODO: check if file exists and ask for overwrite
+		// create file
 		f, err := os.Create(filepath.Join(trgtDir, buf.String()))
 		if err != nil {
 			return err
 		}
 
+		// render file template
 		err = fileTpl.Execute(f, templateContext())
 		if err != nil {
 			return err
